@@ -1,0 +1,7 @@
+"0","#If we do a trial of size n=1000, what is the chance we will get an estimated effect that is larger than 1.1 or smaller than 0.9 (i.e., more than 0.1 off from 1?)
+mean(ifelse(effectestimates1000 < 0.9 | effectestimates1000 > 1.1, 1, 0))
+"
+"1","[1]"
+"1"," 0.11"
+"1","
+"

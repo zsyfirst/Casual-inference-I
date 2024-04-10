@@ -1,0 +1,117 @@
+---
+title: 'Causal Inference in Medicine and Public Health (140.644) - Assignment 1 code'
+author: "Noah Greifer and Carly Lupton-Smith"
+output: 
+  html_document:
+    code_download: true
+---
+
+# Assignment 1
+
+Generate a population of people with potential outcomes - "truth". The true difference in potential outcomes (i.e., the causal effect) is 1.
+
+```{r}
+# set the seed so that the answers remain the same
+set.seed(12345)
+# 10,000 people in the population
+N <- 10000
+# Normally distributed covariate X
+x <- rnorm(N, mean=0, sd=1)
+# Potential outcomes under control
+y0 <- rnorm(N, mean=0, sd=1)
+# Potential outcomes under treatment
+y1 <- rnorm(N, mean=1, sd=1)
+
+mean(y1-y0)
+```
+
+Create a single dataset with all of the variables in it
+```{r}
+popn <- as.data.frame(cbind(x=x, y0=y0, y1=y1))
+#alternatively:
+#popn <- data.frame(x=x, y0=y0, y1=y1)
+
+head(popn)
+```
+
+Now simulate a single randomized trial of size n=100 and set the seed so all answers are the same
+```{r}
+set.seed(12345)
+trialsample <- popn[sample(1:nrow(popn), 100, replace=FALSE),]
+# Randomly assign each member of the sample to treatment or control groups
+trialsample$treatment <- rbinom(100, size=1, prob=0.5)
+
+# Take the difference in sample means as an estimate of the treatment effect
+# In treatment==1 group, y(1) is actually observed, while y(0) is not. The opposite is true in the treatment==0 group
+effect <- mean(trialsample$y1[trialsample$treatment==1])-mean(trialsample$y0[trialsample$treatment==0])
+print(effect)
+
+###alternatively
+#set.seed(67890)
+#trialsample <- popn[sample(1:N, 100, replace=FALSE),] #randomly select 100 people (sample without replacement, a row can only be selected once)
+#trialsample$treatment <- rbinom(100, size=1, prob=0.5) # Randomly assign each member of the sample to treatment or control groups
+#trialsample$y <- with(trialsample, ifelse(treatment == 1, y1, y0)) #Generate observed outcomes (y)
+# Treatment effect - the difference in sample means
+#effect <- with(trialsample, mean(y[treatment==1])-mean(y[treatment==0]))
+#effect
+```
+
+Now we will repeat the hypothetical trial 500 times, drawing a new sample each time. We then examine the distribution of estimated effects.
+
+```{r}
+effectestimates100 <- rep(NA, 500)
+for (i in 1:500) {
+  trialsample <- popn[sample(1:nrow(popn), 100, replace=FALSE),]
+  # Randomly assign each member of the sample to treatment or control groups
+  trialsample$treatment <- rbinom(100, size=1, prob=0.5)
+  
+  # Take the difference in sample means as an estimate of the treatment effect
+  effectestimates100[i] <- mean(trialsample$y1[trialsample$treatment==1])-mean(trialsample$y0[trialsample$treatment==0])
+}
+
+# To have the figure show up in the RStudio interface take out the pdf() and dev.off() lines; with those lines a pdf called "Histograms-n=100.pdf" will be saved in your working directory # with the figure in it
+#pdf("Histograms-n=100.pdf")
+hist(effectestimates100, xlab="Effect estimates")
+#dev.off()
+
+# Print out the mean and SD of effect estimates from the trials with sample size 100 each
+print(mean(effectestimates100))
+print(sd(effectestimates100))
+```
+
+Now still repeat 500 times for hypothetical trials, but each trial has a larger size - n=1000.
+
+```{r}
+effectestimates1000 <- rep(NA, 500)
+for (i in 1:500) {
+  trialsample <- popn[sample(1:nrow(popn), 1000, replace=FALSE),]
+  # Randomly assign each member of the sample to treatment or control groups
+  trialsample$treatment <- rbinom(1000, size=1, prob=0.5)
+  
+  # Take the difference in sample means as an estimate of the treatment effect
+  effectestimates1000[i] <- mean(trialsample$y1[trialsample$treatment==1])-mean(trialsample$y0[trialsample$treatment==0])
+}
+
+# To have the figure show up in the RStudio interface take out the pdf() and dev.off() lines
+# Put both histograms together in one page and make the x-axis the same for both
+#pdf("Histograms-Both.pdf")
+par(mfrow=c(2,1))
+#hist(effectestimates100, xlab="Effect estimates from trials of 100 people each", xlim=c(0.5, 1.5))
+#hist(effectestimates1000, xlab="Effect estimates from trials of 1000 people each", xlim=c(0.5, 1.5))
+#dev.off()
+
+# Print out the mean and SD of effect estimates from the trials with sample size 1000 each
+print(mean(effectestimates1000))
+print(sd(effectestimates1000))
+```
+
+Based on the simulations you ran above:
+
+```{r}
+#If we do a trial of size n=100 what is the chance we will get an estimated effect that is larger than 1.1 or smaller than 0.9 (i.e., more than 0.1 off from 1?) 
+print(mean(ifelse(effectestimates100 < 0.9 | effectestimates100 > 1.1, 1, 0)))
+
+#If we do a trial of size n=1000, what is the chance we will get an estimated effect that is larger than 1.1 or smaller than 0.9 (i.e., more than 0.1 off from 1?)
+mean(ifelse(effectestimates1000 < 0.9 | effectestimates1000 > 1.1, 1, 0))
+```
+
